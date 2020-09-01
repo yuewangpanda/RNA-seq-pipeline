@@ -1,4 +1,4 @@
-# Bulk RNA-seq pipeline
+# Bulk RNA-seq pipeline by Yue Wang
 
 ## Introduction 
 The pipeline is designed to provide efficient pre-processing and quality control of bulk RNA-sequencing (RNA-seq) data on either your local computer or high performance computing clusters (HPCs). Both single- and paired-end datasets are supported, in addition to both library preparation methods interrogating full-length transcripts as well as 3'-end profiling methods. The pipeline has been built and tested using human and mouse data sets. Required software can be installed using Conda with the enrionment file (environment.yml). If you are a Dartmouth researcher, you can find more information about bioinformatics in [here](https://github.com/Dartmouth-Data-Analytics-Core). There also has documents for a simple RNA-seq workshop. 
@@ -10,8 +10,9 @@ The major steps implmented in the pipeline include:
 - Read trimming for Poly-A tails, specified adapters, and read quality using [*cutadapt*](https://cutadapt.readthedocs.io/en/stable/)
 - Alignment using [*STAR*](https://github.com/alexdobin/STAR)
 - Quantification with [*HTSeq-count*](https://htseq.readthedocs.io/en/release_0.11.1/count.html) or [*RSEM*](https://deweylab.github.io/RSEM/)
+- Quality control reports are aggregated into HTML files using [*MultiQC*](https://multiqc.info/). 
 
-All of these tools have been installed in the [conda environment](https://docs.conda.io/en/latest/). As input, the pipeline takes raw data in FASTQ format, and produces quantified read counts (using *HTSeq-Count* or *RSEM*) as well as a detailed quality control report (including pre- and post-alignment QC metrics) for all processed samples. Quality control reports are aggregated into HTML files using [*MultiQC*](https://multiqc.info/). 
+All of these tools have been installed in the [conda environment](https://docs.conda.io/en/latest/). As input, the pipeline takes raw data in FASTQ format, and produces quantified read counts (using *HTSeq-Count* or *RSEM*) as well as files (including pre- and post-alignment QC metrics) for all processed samples. Users can use [*MultiQC*](https://multiqc.info/) to visualize those QC reports.
 
 R-code used to perform downstream exploratory data analysis and gene-level differential expression are also provided, however are currently detatched from the preprocessing and quality control steps and must be run separately. These scripts will be incorporated into the pipeline in the near future. 
 
@@ -30,11 +31,20 @@ This is the reference that you would like to use during the alignment step, plea
 * **QuantRef** - Absolute path to genome annotation file (.gtf) of [*HTSeq-count*](https://htseq.readthedocs.io/en/release_0.11.1/count.html) or [*RSEM*](https://deweylab.github.io/RSEM/)
 * **CondaEnv**- This is the environment that includes all of the dependencies needed to run this pipeline, the yml file to create this environment is included in this directory (environment.yml).
 You need to [set up your conda environment first](https://docs.conda.io/en/latest/).
-Then, you can create the conda environment by using the **environment.yml** file.
+Then, you can create the conda environment by using the **rnaseqTools.yml** file.
 ```{shell}
-conda env create -f environment.yml
+conda env create -f rnaseqTools.yml
 ```
-Then, you just need to set the CondaEnv as:
+If you want to check what packages are installed in the conda environment, you simply type the following code in a terminal.
+```{shell}
+conda activate rnaseqTools
+conda list
+```
+Don't forget to deactivate the environment when you don't need it. 
+```{shell}
+conda deactivate
+```
+For running the two pipelines, you just need to set the CondaEnv as:
 ```{r}
 myConda <- "rnaseqTools"
 ```
@@ -48,12 +58,14 @@ alignment/
 rawcounts/
 
 ### Example of human paired end RNA-seq data 
+* **Using a server**
+Users can revise the code appropriately to meet the requirements of their own servers. 
 #### R script
 ```{r}
 #load the functions
-source("pipeline.R")
+source("pipeline_Server.R")
 #Preparation for parameters 
-whoseData <- "Example"
+jobName <- "jobID"
 mySeq <- "pairedEnd"
 myRaw <- "path to folder of all the raw fastq files"
 myOut <- "path to folder of outputs"
@@ -70,17 +82,43 @@ mySams <- c("sample 1", "sample 2", "sample 3", "sample 4", "sample 5")
 # Clean the data in the folders in the OutputFolder if you want the same folders to keep outputs. If you name a new folder for outputs, Skip this step. 
 cleanFolders(myOut)
 
-DAC_RNAseq_process(Lab = whoseData, FastqRaw = myRaw, SamNames = mySams, SeqMethod = mySeq, AlignInd = StarInd, AlignRef = StarRef, 
+RNAseq_process(JobName = jobName, FastqRaw = myRaw, SamNames = mySams, SeqMethod = mySeq, AlignInd = StarInd, AlignRef = StarRef, 
 		PicardInt = PicardInt, PicardRef = PicardRef, QuantRef = RsemRef, CondaEnv = myConda, meanLength = 313, sdLength = 91, OutputFolder = myOut)
 ```
 #### Bash script
-After running the DAC_RNAseq_process() function, jobs will be generated in the tmp/ folder. A submit.sp containing all the job IDs will be generated. Then, using the following commands to submit your jobs to the server. If you are a Dartmouth user and have [discovery account](https://rc.dartmouth.edu/index.php/discovery-overview/), the jobs will go to the server automatically. If you are using other servers, you can revise the code to match your own servers.
+After running the RNAseq_process() function, jobs will be generated in the tmp/ folder. A submit.sp containing all the job IDs will be generated. Then, using the following commands to submit your jobs to the server. If you are a Dartmouth user and have [discovery account](https://rc.dartmouth.edu/index.php/discovery-overview/), the jobs will go to the server automatically. If you are using other servers, you can revise the code to match your own servers.
 ```{shell}
 cd path_to/tmp/
 bash submit.sp
 ```
+* **Using your own computer**
+#### R script
+```{r}
+#load the functions
+source("pipeline_ForLoop.R")
+#Preparation for parameters
+mySeq <- "pairedEnd"
+myRaw <- "path to folder of all the raw fastq files"
+myOut <- "path to folder of outputs"
+myConda <- "path to the conda environment"
+#--
+StarInd <- "path_to/STAR/hg38_index"
+StarRef <- "path_to//Homo_sapiens.GRCh38.97.gtf"
+PicardRef <- "path_to/Homo_sapiens.GRCh38.97.refFlat.txt"
+PicardInt <- "path_to//Homo_sapiens.GRCh38.97.rRNA.interval_list"
+RsemRef <- "path_to/RSEMref"
+#--
+mySams <- c("sample 1", "sample 2", "sample 3", "sample 4", "sample 5")
+#--
+# Clean the data in the folders in the OutputFolder if you want the same folders to keep outputs. If you name a new folder for outputs, Skip this step. 
+cleanFolders(myOut)
+
+RNAseq_process(FastqRaw = myRaw, SamNames = mySams, SeqMethod = mySeq, AlignInd = StarInd, AlignRef = StarRef, 
+		PicardInt = PicardInt, PicardRef = PicardRef, QuantRef = RsemRef, CondaEnv = myConda, meanLength = 313, sdLength = 91, OutputFolder = myOut)
+		
+```
 ### General implementation notes: 
-* This pipeline only currently accepts **stranded** sequencing libraries for processing. If your data was generated using an unstranded RNA-seq library preparation protocol, you will need to change options specified in the read-count quantification step using htseq-count. We hope to address this limitation in future versions of the pipeline. 
+* This pipeline only currently accepts **stranded** sequencing libraries for processing. If your data was generated using an unstranded RNA-seq library preparation protocol, you will need to change options specified in the read-count quantification step using htseq-count. I hope to address this limitation in future versions of the pipeline. 
 
 > **Contact & questions:** 
 > Please address questions to *wangyuewy729@dartmouth.edu* or generate a issue in the GitHub repository. 
