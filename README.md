@@ -1,7 +1,7 @@
 # Bulk RNA-seq pipeline
 
 ## Introduction 
-The pipeline is designed to provide efficient pre-processing and quality control of bulk RNA-sequencing (RNA-seq) data on either your local computer or high performance computing clusters (HPCs). Both single- and paired-end datasets are supported, in addition to both library preparation methods interrogating full-length transcripts as well as 3'-end profiling methods. The pipeline has been built and tested using human and mouse data sets. Required software can be installed using Conda with the enrionment file (environment.yml). 
+The pipeline is designed to provide efficient pre-processing and quality control of bulk RNA-sequencing (RNA-seq) data on either your local computer or high performance computing clusters (HPCs). Both single- and paired-end datasets are supported, in addition to both library preparation methods interrogating full-length transcripts as well as 3'-end profiling methods. The pipeline has been built and tested using human and mouse data sets. Required software can be installed using Conda with the enrionment file (environment.yml). If you are a Dartmouth researcher, you can find more information about bioinformatics in [here](https://github.com/Dartmouth-Data-Analytics-Core). There also has documents for a simple RNA-seq workshop. 
 
 ## Pipeline summary:
 The major steps implmented in the pipeline include: 
